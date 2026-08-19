@@ -1,0 +1,6 @@
+{
+  "name": "Vườn Ươm Tri Thức",
+  "description": "Ứng dụng quản lý lớp học tiểu học thông minh: theo dõi thi đua tích điểm, vườn cây tri thức, giao nhiệm vụ, vinh danh và công cụ sư phạm tiện ích cho giáo viên.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
