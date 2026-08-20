@@ -21,6 +21,11 @@ import {
   playPointDeductSound,
   playBloomCelebrationSound
 } from './utils/audio';
+import {
+  fetchTeachersList,
+  loadTeacherClassData,
+  saveTeacherClassData
+} from './utils/api';
 
 import { LoginView } from './components/auth/LoginView';
 import { Header } from './components/Header';
@@ -177,7 +182,24 @@ export default function App() {
   const [isTeacherEditModalOpen, setIsTeacherEditModalOpen] = useState(false);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
-  // Persistence Effects
+  // Persistence & Server Synchronization Effects
+  useEffect(() => {
+    // 1. Fetch registered teachers from server on mount
+    fetchTeachersList().then((serverTeachers) => {
+      if (serverTeachers && serverTeachers.length > 0) {
+        setRegisteredTeachers((prev) => {
+          const map = new Map<string, TeacherAccount>();
+          DEFAULT_TEACHERS.forEach((t) => map.set(t.email.toLowerCase(), t));
+          prev.forEach((t) => map.set(t.email.toLowerCase(), t));
+          serverTeachers.forEach((t) => map.set(t.email.toLowerCase(), t));
+          const merged = Array.from(map.values());
+          localStorage.setItem(STORAGE_KEYS.teachers, JSON.stringify(merged));
+          return merged;
+        });
+      }
+    });
+  }, []);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.teachers, JSON.stringify(registeredTeachers));
   }, [registeredTeachers]);
@@ -214,6 +236,22 @@ export default function App() {
     localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(notes));
   }, [notes]);
 
+  // Debounced sync of class state to server for cross-browser persistence
+  useEffect(() => {
+    if (!currentTeacher?.id) return;
+    const timer = setTimeout(() => {
+      saveTeacherClassData(currentTeacher.id, {
+        students,
+        tasks,
+        notices,
+        library,
+        settings,
+        notes
+      });
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [currentTeacher?.id, students, tasks, notices, library, settings, notes]);
+
   // Toast Helper
   const showToast = (message: string, type: 'success' | 'error' | 'info' | 'points' = 'success') => {
     const id = Date.now() + Math.random();
@@ -224,13 +262,42 @@ export default function App() {
   };
 
   // Auth Handlers
-  const handleLoginSuccess = (teacher: TeacherAccount) => {
+  const handleLoginSuccess = async (teacher: TeacherAccount) => {
     setCurrentTeacher(teacher);
     setSettings((prev) => ({
       ...prev,
       teacherName: teacher.name || prev.teacherName,
       className: teacher.className || prev.className
     }));
+
+    // Fetch synced data from server if available
+    try {
+      const remoteData = await loadTeacherClassData(teacher.id);
+      if (remoteData) {
+        if (remoteData.students && remoteData.students.length > 0) setStudents(remoteData.students);
+        if (remoteData.tasks && remoteData.tasks.length > 0) setTasks(remoteData.tasks);
+        if (remoteData.notices && remoteData.notices.length > 0) setNotices(remoteData.notices);
+        if (remoteData.library && remoteData.library.length > 0) setLibrary(remoteData.library);
+        if (remoteData.settings) setSettings(remoteData.settings);
+        if (remoteData.notes && remoteData.notes.length > 0) setNotes(remoteData.notes);
+      } else {
+        // Initial sync to server
+        saveTeacherClassData(teacher.id, {
+          students,
+          tasks,
+          notices,
+          library,
+          settings: {
+            ...settings,
+            teacherName: teacher.name || settings.teacherName,
+            className: teacher.className || settings.className
+          },
+          notes
+        });
+      }
+    } catch (e) {
+      console.warn('Could not load remote class data:', e);
+    }
 
     if (settings.enableSound) {
       playBloomCelebrationSound();
@@ -244,7 +311,11 @@ export default function App() {
   };
 
   const handleRegisterTeacher = (newTeacher: TeacherAccount) => {
-    setRegisteredTeachers((prev) => [newTeacher, ...prev]);
+    setRegisteredTeachers((prev) => {
+      const exists = prev.some((t) => t.email.toLowerCase() === newTeacher.email.toLowerCase());
+      if (exists) return prev;
+      return [newTeacher, ...prev];
+    });
   };
 
   const handleLogout = () => {

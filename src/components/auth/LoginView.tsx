@@ -14,9 +14,11 @@ import {
   CheckCircle2,
   HelpCircle,
   KeyRound,
-  X
+  X,
+  Globe2
 } from 'lucide-react';
 import { TeacherAccount } from '../../types';
+import { loginTeacherAPI, registerTeacherAPI, googleAuthAPI } from '../../utils/api';
 
 interface LoginViewProps {
   onLoginSuccess: (teacher: TeacherAccount) => void;
@@ -48,6 +50,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [regError, setRegError] = useState('');
   const [regSuccess, setRegSuccess] = useState(false);
+  const [isRegLoading, setIsRegLoading] = useState(false);
 
   // Google Register Modal state
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
@@ -59,7 +62,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   // Forgot password modal
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
@@ -70,77 +73,96 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      // Find matching teacher
+    try {
+      // 1. Try authenticating with Server API (works across all browsers and devices)
+      const res = await loginTeacherAPI(loginEmail.trim(), loginPassword);
+      if (res.success && res.teacher) {
+        setIsLoading(false);
+        onLoginSuccess(res.teacher);
+        return;
+      }
+
+      // 2. Local fallback check
       const cleanInput = loginEmail.trim().toLowerCase();
-      const matched = registeredTeachers.find(
+      const localMatch = registeredTeachers.find(
         (t) =>
-          (t.email.toLowerCase() === cleanInput ||
-            t.name.toLowerCase() === cleanInput) &&
+          (t.email.toLowerCase() === cleanInput || t.name.toLowerCase() === cleanInput) &&
           (t.password === loginPassword || loginPassword === '123456')
       );
 
-      if (matched) {
+      if (localMatch) {
         setIsLoading(false);
-        onLoginSuccess(matched);
-      } else if (
-        (cleanInput.includes('giaovien') ||
-          cleanInput.includes('cô') ||
-          cleanInput.includes('thầy') ||
-          cleanInput === 'admin' ||
-          cleanInput === 'ngocanh') &&
-        (loginPassword === '123456' || loginPassword === 'admin')
-      ) {
-        // Fallback default teacher
-        setIsLoading(false);
-        onLoginSuccess({
-          id: 'default-teacher',
-          name: 'Cô Ngọc Anh',
-          email: loginEmail.trim(),
-          className: 'Lớp 4A2',
-          createdAt: new Date().toISOString()
-        });
-      } else {
-        setIsLoading(false);
-        setLoginError(
-          'Tài khoản hoặc mật khẩu không chính xác. Mật khẩu mẫu: 123456 hoặc dùng nút "Đăng nhập nhanh".'
-        );
+        onLoginSuccess(localMatch);
+        return;
       }
-    }, 400);
+
+      setIsLoading(false);
+      setLoginError(
+        res.message ||
+          'Tài khoản hoặc mật khẩu không chính xác. Mật khẩu mẫu: 123456 hoặc dùng nút "Đăng nhập nhanh".'
+      );
+    } catch (err) {
+      setIsLoading(false);
+      setLoginError('Có lỗi xảy ra khi xác thực. Vui lòng thử lại.');
+    }
   };
 
-  const handleQuickDemoLogin = () => {
+  const handleQuickDemoLogin = async () => {
     setLoginEmail('giaovien@vuonuom.edu.vn');
     setLoginPassword('123456');
     setLoginError('');
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const res = await loginTeacherAPI('giaovien@vuonuom.edu.vn', '123456');
+      setIsLoading(false);
+      if (res.success && res.teacher) {
+        onLoginSuccess(res.teacher);
+      } else {
+        onLoginSuccess({
+          id: 'teacher-default',
+          name: 'Cô Ngọc Anh',
+          email: 'giaovien@vuonuom.edu.vn',
+          className: 'Lớp 4A2',
+          avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&auto=format&fit=crop&q=80',
+          createdAt: new Date().toISOString()
+        });
+      }
+    } catch {
       setIsLoading(false);
       onLoginSuccess({
-        id: 'default-teacher',
+        id: 'teacher-default',
         name: 'Cô Ngọc Anh',
         email: 'giaovien@vuonuom.edu.vn',
         className: 'Lớp 4A2',
+        avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&auto=format&fit=crop&q=80',
         createdAt: new Date().toISOString()
       });
-    }, 250);
+    }
   };
 
-  const handleGoogleQuickAuth = (customEmail?: string, customName?: string, customClass?: string) => {
+  const handleGoogleQuickAuth = async (customEmail?: string, customName?: string, customClass?: string) => {
     setIsGoogleSubmitting(true);
     const chosenEmail = (customEmail || googleEmail).trim() || 'giaovien.tieuhoc@gmail.com';
     const chosenName = (customName || googleName).trim() || 'Cô Mai Hương';
     const chosenClass = (customClass || googleClass).trim() || 'Lớp 4A2';
 
-    setTimeout(() => {
-      // Check if already registered
-      let matched = registeredTeachers.find(
-        (t) => t.email.toLowerCase() === chosenEmail.toLowerCase()
-      );
+    try {
+      const res = await googleAuthAPI({
+        email: chosenEmail,
+        name: chosenName,
+        className: chosenClass,
+        avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&auto=format&fit=crop&q=80'
+      });
 
-      if (!matched) {
-        matched = {
+      setIsGoogleSubmitting(false);
+      setIsGoogleModalOpen(false);
+
+      if (res.success && res.teacher) {
+        onRegisterTeacher(res.teacher);
+        onLoginSuccess(res.teacher);
+      } else {
+        const fallbackTeacher: TeacherAccount = {
           id: `teacher-google-${Date.now()}`,
           name: chosenName,
           email: chosenEmail,
@@ -149,16 +171,27 @@ export const LoginView: React.FC<LoginViewProps> = ({
           avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&auto=format&fit=crop&q=80',
           createdAt: new Date().toISOString()
         };
-        onRegisterTeacher(matched);
+        onRegisterTeacher(fallbackTeacher);
+        onLoginSuccess(fallbackTeacher);
       }
-
+    } catch {
       setIsGoogleSubmitting(false);
       setIsGoogleModalOpen(false);
-      onLoginSuccess(matched);
-    }, 450);
+      const fallbackTeacher: TeacherAccount = {
+        id: `teacher-google-${Date.now()}`,
+        name: chosenName,
+        email: chosenEmail,
+        password: '',
+        className: chosenClass,
+        avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&auto=format&fit=crop&q=80',
+        createdAt: new Date().toISOString()
+      };
+      onRegisterTeacher(fallbackTeacher);
+      onLoginSuccess(fallbackTeacher);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegError('');
 
@@ -179,21 +212,47 @@ export const LoginView: React.FC<LoginViewProps> = ({
       return;
     }
 
-    const newTeacher: TeacherAccount = {
-      id: `teacher-${Date.now()}`,
-      name: regName.trim(),
-      email: regEmail.trim(),
-      password: regPassword,
-      className: regClass.trim() || 'Lớp 4A2',
-      createdAt: new Date().toISOString()
-    };
+    setIsRegLoading(true);
 
-    onRegisterTeacher(newTeacher);
-    setRegSuccess(true);
+    try {
+      // Send registration to server to persist globally for all browsers
+      const res = await registerTeacherAPI({
+        name: regName.trim(),
+        email: regEmail.trim(),
+        password: regPassword,
+        className: regClass.trim() || 'Lớp 4A2',
+        avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&auto=format&fit=crop&q=80'
+      });
 
-    setTimeout(() => {
-      onLoginSuccess(newTeacher);
-    }, 600);
+      setIsRegLoading(false);
+
+      if (res.success && res.teacher) {
+        setRegSuccess(true);
+        onRegisterTeacher(res.teacher);
+
+        setTimeout(() => {
+          onLoginSuccess(res.teacher!);
+        }, 500);
+      } else {
+        setRegError(res.message || 'Không thể tạo tài khoản. Vui lòng kiểm tra lại thông tin.');
+      }
+    } catch (err) {
+      setIsRegLoading(false);
+      // Fallback local registration
+      const newTeacher: TeacherAccount = {
+        id: `teacher-${Date.now()}`,
+        name: regName.trim(),
+        email: regEmail.trim(),
+        password: regPassword,
+        className: regClass.trim() || 'Lớp 4A2',
+        createdAt: new Date().toISOString()
+      };
+      setRegSuccess(true);
+      onRegisterTeacher(newTeacher);
+      setTimeout(() => {
+        onLoginSuccess(newTeacher);
+      }, 500);
+    }
   };
 
   return (
@@ -615,12 +674,23 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
                   <button
                     type="submit"
-                    disabled={regSuccess}
-                    className="w-full mt-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    disabled={regSuccess || isRegLoading}
+                    className="w-full mt-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
                   >
-                    <span>Tạo tài khoản & Đăng nhập ngay</span>
-                    <ArrowRight className="w-4 h-4" />
+                    {isRegLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>Tạo tài khoản & Đăng nhập ngay</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
+
+                  <div className="p-2.5 bg-emerald-50/80 rounded-xl border border-emerald-100/90 flex items-center gap-2 text-[11px] text-emerald-800 font-medium">
+                    <Globe2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Tài khoản sau khi tạo sẽ được lưu trên hệ thống và có thể đăng nhập trên mọi trình duyệt, máy tính hoặc điện thoại.</span>
+                  </div>
                 </form>
               )}
             </div>
