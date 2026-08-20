@@ -6,7 +6,8 @@ import {
   Notice,
   LibraryItem,
   ClassSettings,
-  ViewTab
+  ViewTab,
+  TeacherAccount
 } from './types';
 import {
   initialStudents,
@@ -21,6 +22,7 @@ import {
   playBloomCelebrationSound
 } from './utils/audio';
 
+import { LoginView } from './components/auth/LoginView';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Toast, ToastData } from './components/Toast';
@@ -54,10 +56,50 @@ const STORAGE_KEYS = {
   notices: 'vuon-uom-tri-thuc-notices-v2',
   library: 'vuon-uom-tri-thuc-library-v2',
   settings: 'vuon-uom-tri-thuc-settings-v2',
-  notes: 'vuon-uom-tri-thuc-notes-v2'
+  notes: 'vuon-uom-tri-thuc-notes-v2',
+  teachers: 'vuon-uom-tri-thuc-teachers-v2',
+  currentTeacher: 'vuon-uom-tri-thuc-session-v2'
 };
 
+const DEFAULT_TEACHERS: TeacherAccount[] = [
+  {
+    id: 'teacher-default',
+    name: 'Cô Ngọc Anh',
+    email: 'giaovien@vuonuom.edu.vn',
+    password: '123456',
+    className: 'Lớp 4A2',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'teacher-2',
+    name: 'Cô Mai Hương',
+    email: 'maihuong@vuonuom.edu.vn',
+    password: '123456',
+    className: 'Lớp 3B',
+    createdAt: new Date().toISOString()
+  }
+];
+
 export default function App() {
+  // Authentication & Teacher Session State
+  const [registeredTeachers, setRegisteredTeachers] = useState<TeacherAccount[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.teachers);
+      return saved ? JSON.parse(saved) : DEFAULT_TEACHERS;
+    } catch {
+      return DEFAULT_TEACHERS;
+    }
+  });
+
+  const [currentTeacher, setCurrentTeacher] = useState<TeacherAccount | null>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.currentTeacher);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   // Load data from localStorage or seed
   const [students, setStudents] = useState<Student[]>(() => {
     try {
@@ -137,6 +179,18 @@ export default function App() {
 
   // Persistence Effects
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.teachers, JSON.stringify(registeredTeachers));
+  }, [registeredTeachers]);
+
+  useEffect(() => {
+    if (currentTeacher) {
+      localStorage.setItem(STORAGE_KEYS.currentTeacher, JSON.stringify(currentTeacher));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.currentTeacher);
+    }
+  }, [currentTeacher]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.students, JSON.stringify(students));
   }, [students]);
 
@@ -167,6 +221,38 @@ export default function App() {
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 2400);
+  };
+
+  // Auth Handlers
+  const handleLoginSuccess = (teacher: TeacherAccount) => {
+    setCurrentTeacher(teacher);
+    setSettings((prev) => ({
+      ...prev,
+      teacherName: teacher.name || prev.teacherName,
+      className: teacher.className || prev.className
+    }));
+
+    if (settings.enableSound) {
+      playBloomCelebrationSound();
+    }
+    confetti({
+      particleCount: 80,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+    showToast(`Chào mừng ${teacher.name} đã đăng nhập vào ${teacher.className || settings.className}! 🌸`);
+  };
+
+  const handleRegisterTeacher = (newTeacher: TeacherAccount) => {
+    setRegisteredTeachers((prev) => [newTeacher, ...prev]);
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('Thầy/Cô có chắc chắn muốn đăng xuất khỏi phiên làm việc hiện tại?')) {
+      setCurrentTeacher(null);
+      localStorage.removeItem(STORAGE_KEYS.currentTeacher);
+      showToast('Đã đăng xuất tài khoản thành công.', 'info');
+    }
   };
 
   // Helper for computing student growth stages
@@ -478,6 +564,20 @@ export default function App() {
     showToast(`Đã chuyển sang quản lý ${clsName}`);
   };
 
+  // If user is not authenticated, render Login Screen
+  if (!currentTeacher) {
+    return (
+      <>
+        <LoginView
+          onLoginSuccess={handleLoginSuccess}
+          registeredTeachers={registeredTeachers}
+          onRegisterTeacher={handleRegisterTeacher}
+        />
+        <Toast toasts={toasts} />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f7fbff] text-slate-800 flex flex-col md:flex-row antialiased selection:bg-blue-100 selection:text-blue-900">
       {/* Sidebar Navigation */}
@@ -491,6 +591,7 @@ export default function App() {
         onOpenSupport={() => setIsSupportModalOpen(true)}
         unreadNoticesCount={notices.length}
         openTasksCount={tasks.filter((t) => !t.done).length}
+        onLogout={handleLogout}
       />
 
       {/* Main App Content */}
@@ -503,6 +604,7 @@ export default function App() {
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
           onSelectClass={handleSelectClass}
           onOpenNotices={() => setCurrentView('notices')}
+          onLogout={handleLogout}
         />
 
         {/* View Router */}
@@ -621,6 +723,7 @@ export default function App() {
               onResetData={handleResetData}
               onExportJSON={handleExportJSON}
               onImportJSON={handleImportJSON}
+              onLogout={handleLogout}
             />
           )}
         </main>

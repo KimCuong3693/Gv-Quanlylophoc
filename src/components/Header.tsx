@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Calendar, Menu, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { Bell, Calendar, Menu, Volume2, VolumeX, Sparkles, LogOut, User } from 'lucide-react';
 import { ViewTab, ClassSettings } from '../types';
 
 interface HeaderProps {
@@ -9,6 +9,7 @@ interface HeaderProps {
   onToggleSidebar: () => void;
   onSelectClass: (className: string) => void;
   onOpenNotices: () => void;
+  onLogout?: () => void;
 }
 
 const VIEW_TITLES: Record<ViewTab, string> = {
@@ -29,7 +30,8 @@ export const Header: React.FC<HeaderProps> = ({
   onUpdateSettings,
   onToggleSidebar,
   onSelectClass,
-  onOpenNotices
+  onOpenNotices,
+  onLogout
 }) => {
   const currentDate = new Date().toLocaleDateString('vi-VN', {
     weekday: 'long',
@@ -100,7 +102,19 @@ export const Header: React.FC<HeaderProps> = ({
           <Calendar className="w-3.5 h-3.5 text-blue-600" />
           <span className="capitalize">{currentDate}</span>
         </div>
+
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            title="Đăng xuất khỏi tài khoản"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-rose-50 hover:text-rose-600 border border-slate-200 text-slate-600 text-xs font-bold transition-colors cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Đăng xuất</span>
+          </button>
+        )}
       </div>
     </header>
   );
 };
+

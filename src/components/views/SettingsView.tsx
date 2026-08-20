@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Settings, Save, RotateCcw, Download, Upload, Volume2, Sparkles, Check } from 'lucide-react';
+import { Settings, Save, RotateCcw, Download, Upload, Volume2, Sparkles, Check, User, LogOut } from 'lucide-react';
 import { ClassSettings } from '../../types';
 
 interface SettingsViewProps {
@@ -8,6 +8,7 @@ interface SettingsViewProps {
   onResetData: () => void;
   onExportJSON: () => void;
   onImportJSON: (file: File) => void;
+  onLogout?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -15,7 +16,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onSaveSettings,
   onResetData,
   onExportJSON,
-  onImportJSON
+  onImportJSON,
+  onLogout
 }) => {
   const [formData, setFormData] = useState<ClassSettings>(settings);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -194,6 +196,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Teacher Session & Account */}
+      {onLogout && (
+        <div className="p-6 bg-slate-100/70 border-t border-[#e7edf4] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-lg">
+              👩‍🏫
+            </div>
+            <div>
+              <strong className="block text-xs sm:text-sm font-bold text-slate-800">
+                {settings.teacherName} ({settings.className})
+              </strong>
+              <span className="text-[11px] text-slate-500">Tài khoản giáo viên đang hoạt động</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors shadow-xs"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

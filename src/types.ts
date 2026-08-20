@@ -56,6 +56,16 @@ export interface ClassSettings {
   enableSound: boolean;
 }
 
+export interface TeacherAccount {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  className: string;
+  avatar?: string;
+  createdAt?: string;
+}
+
 export type ViewTab =
   | 'dashboard'
   | 'students'

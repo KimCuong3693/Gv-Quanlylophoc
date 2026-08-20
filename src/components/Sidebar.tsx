@@ -11,7 +11,8 @@ import {
   Settings,
   Sparkles,
   HelpCircle,
-  Pencil
+  Pencil,
+  LogOut
 } from 'lucide-react';
 import { ViewTab, ClassSettings } from '../types';
 
@@ -25,6 +26,7 @@ interface SidebarProps {
   onOpenSupport: () => void;
   unreadNoticesCount?: number;
   openTasksCount?: number;
+  onLogout?: () => void;
 }
 
 interface NavItem {
@@ -43,7 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenEditTeacher,
   onOpenSupport,
   unreadNoticesCount = 2,
-  openTasksCount = 2
+  openTasksCount = 2,
+  onLogout
 }) => {
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Trang chủ', icon: Home },
@@ -140,13 +143,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2">
             {settings.slogan}
           </p>
-          <button
-            onClick={onOpenSupport}
-            className="w-full mt-2.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Hướng dẫn & Trợ giúp</span>
-          </button>
+          <div className="flex items-center gap-2 mt-2.5">
+            <button
+              onClick={onOpenSupport}
+              className="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>Trợ giúp</span>
+            </button>
+
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                title="Đăng xuất giáo viên"
+                className="py-2 px-3 bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-600 hover:text-rose-600 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-2xs"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="sr-only sm:not-sr-only">Thoát</span>
+              </button>
+            )}
+          </div>
         </div>
       </aside>
     </>
