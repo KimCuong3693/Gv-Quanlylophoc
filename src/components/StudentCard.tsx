@@ -57,9 +57,17 @@ export const StudentCard: React.FC<StudentCardProps> = ({
       {/* Top Details */}
       <div className={rank !== undefined ? 'pl-9' : ''}>
         <div className="flex items-start justify-between gap-1">
-          <strong className="block text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-1" title={student.name}>
-            {student.name}
-          </strong>
+          <button
+            type="button"
+            onClick={() => onOpenEdit(student)}
+            className="text-left group/name flex items-center gap-1 min-w-0"
+            title="Nhấn để đổi tên hoặc sửa thông tin học sinh"
+          >
+            <strong className="block text-sm font-bold text-slate-800 group-hover/name:text-blue-600 group-hover/name:underline transition-colors truncate">
+              {student.name}
+            </strong>
+            <Pencil className="w-3 h-3 text-slate-300 group-hover/name:text-blue-500 opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
+          </button>
           <div className="text-right shrink-0">
             <span className="text-base font-black text-blue-600">{student.points}</span>
             <span className="text-xs text-amber-500 font-bold ml-0.5">⭐</span>

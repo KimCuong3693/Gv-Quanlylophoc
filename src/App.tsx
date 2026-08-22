@@ -43,6 +43,7 @@ import { ReportsView } from './components/views/ReportsView';
 import { SettingsView } from './components/views/SettingsView';
 
 import { StudentModal } from './components/modals/StudentModal';
+import { BulkStudentsModal } from './components/modals/BulkStudentsModal';
 import { EditStudentModal } from './components/modals/EditStudentModal';
 import { QuickPointsModal } from './components/modals/QuickPointsModal';
 import { TaskModal } from './components/modals/TaskModal';
@@ -109,7 +110,20 @@ export default function App() {
   const [students, setStudents] = useState<Student[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.students);
-      return saved ? JSON.parse(saved) : initialStudents;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // If stored data contains old hardcoded student names, reset to initialStudents with 'Học sinh 01...'
+          const hasOldNames = parsed.some(
+            (s: any) => s.name === 'Nguyễn Hoàng Minh Khang' || s.name === 'Trần Ngọc Bảo An'
+          );
+          if (hasOldNames) {
+            return initialStudents;
+          }
+          return parsed;
+        }
+      }
+      return initialStudents;
     } catch {
       return initialStudents;
     }
@@ -169,6 +183,7 @@ export default function App() {
 
   // Modal visibility states
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [quickPointsStudent, setQuickPointsStudent] = useState<Student | null>(null);
   const [isQuickPointsModalOpen, setIsQuickPointsModalOpen] = useState(false);
@@ -376,19 +391,32 @@ export default function App() {
   };
 
   // Student Management Handlers
-  const handleAddStudent = (name: string, team: string, badge?: string) => {
+  const handleAddStudent = (name: string, team: string, badge?: string, initialPoints = 0) => {
+    const growth = calculateStudentGrowth(initialPoints);
     const newStudent: Student = {
       id: Date.now() + Math.floor(Math.random() * 1000),
       name,
       team,
       badge: badge || '',
-      points: 0,
-      level: 'Hạt giống',
-      progress: 0,
-      flowers: 0
+      ...growth
     };
     setStudents((prev) => [newStudent, ...prev]);
     showToast(`Đã thêm học sinh ${name} vào ${team}!`);
+  };
+
+  const handleImportStudents = (newStudentsList: Student[], replaceMode: boolean) => {
+    if (replaceMode) {
+      setStudents(newStudentsList);
+      showToast(`Đã cập nhật danh sách gồm ${newStudentsList.length} học sinh!`);
+    } else {
+      setStudents((prev) => [...prev, ...newStudentsList]);
+      showToast(`Đã thêm ${newStudentsList.length} học sinh vào lớp!`);
+    }
+  };
+
+  const handleResetStudentsToDefault = () => {
+    setStudents(initialStudents);
+    showToast('Đã đặt lại danh sách lớp mẫu (Học sinh 01 → Học sinh 28)!');
   };
 
   const handleSaveEditedStudent = (updated: Partial<Student>) => {
@@ -713,6 +741,8 @@ export default function App() {
               students={students}
               settings={settings}
               onAddStudentClick={() => setIsStudentModalOpen(true)}
+              onOpenBulkModal={() => setIsBulkModalOpen(true)}
+              onResetStudentsToDefault={handleResetStudentsToDefault}
               onBulkAward={handleBulkAward}
               onBulkDeduct={handleBulkDeduct}
               onAddPoints={handleAddPoints}
@@ -860,6 +890,14 @@ export default function App() {
         onClose={() => setIsStudentModalOpen(false)}
         onAddStudent={handleAddStudent}
         existingNames={students.map((s) => s.name)}
+      />
+
+      <BulkStudentsModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        currentStudentsCount={students.length}
+        onImportStudents={handleImportStudents}
+        onResetToDefault={handleResetStudentsToDefault}
       />
 
       <EditStudentModal

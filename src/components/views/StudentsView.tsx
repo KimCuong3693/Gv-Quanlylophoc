@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, UserPlus, Gift, MinusCircle, ArrowUpDown } from 'lucide-react';
+import { Search, UserPlus, Gift, MinusCircle, ArrowUpDown, FileSpreadsheet, RefreshCw, Users } from 'lucide-react';
 import { Student, ClassSettings } from '../../types';
 import { StudentCard } from '../StudentCard';
 
@@ -7,6 +7,8 @@ interface StudentsViewProps {
   students: Student[];
   settings: ClassSettings;
   onAddStudentClick: () => void;
+  onOpenBulkModal: () => void;
+  onResetStudentsToDefault: () => void;
   onBulkAward: () => void;
   onBulkDeduct: () => void;
   onAddPoints: (id: string | number, pts: number, reason?: string) => void;
@@ -19,6 +21,8 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   students,
   settings,
   onAddStudentClick,
+  onOpenBulkModal,
+  onResetStudentsToDefault,
   onBulkAward,
   onBulkDeduct,
   onAddPoints,
@@ -31,71 +35,135 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
   const [sortBy, setSortBy] = useState<'name' | 'points-desc' | 'points-asc' | 'team'>('name');
 
   const filtered = students.filter((s) => {
-    const matchQuery = s.name.toLowerCase().includes(search.toLowerCase()) || (s.badge && s.badge.toLowerCase().includes(search.toLowerCase()));
+    const matchQuery =
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      (s.badge && s.badge.toLowerCase().includes(search.toLowerCase()));
     const matchTeam = !teamFilter || s.team === teamFilter;
     return matchQuery && matchTeam;
   });
 
   const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === 'name') return a.name.localeCompare(b.name, 'vi');
+    if (sortBy === 'name') return a.name.localeCompare(b.name, 'vi', { numeric: true });
     if (sortBy === 'points-desc') return b.points - a.points;
     if (sortBy === 'points-asc') return a.points - b.points;
     if (sortBy === 'team') return a.team.localeCompare(b.team, 'vi');
     return 0;
   });
 
+  // Calculate team counts
+  const teamCounts = {
+    'Tổ 1': students.filter((s) => s.team === 'Tổ 1').length,
+    'Tổ 2': students.filter((s) => s.team === 'Tổ 2').length,
+    'Tổ 3': students.filter((s) => s.team === 'Tổ 3').length,
+    'Tổ 4': students.filter((s) => s.team === 'Tổ 4').length
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-[#e7edf4] shadow-xs overflow-hidden">
       {/* Header Bar */}
-      <div className="p-4 sm:p-5 border-b border-[#e7edf4] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-4 sm:p-5 border-b border-[#e7edf4] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Quản lý học sinh</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Tổng cộng: <strong className="text-blue-600 font-bold">{students.length}</strong> học sinh trong danh sách lớp
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-800">Quản lý danh sách học sinh</h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+              {students.length} học sinh
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Giáo viên có thể nhấp trực tiếp vào tên hoặc nút <strong>Sửa</strong> để đổi tên và thông tin từng học sinh
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action button cluster */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={onOpenBulkModal}
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-colors border border-slate-200"
+            title="Dán danh sách học sinh từ Excel hoặc danh sách có sẵn"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Nhập danh sách nhanh</span>
+          </button>
+
           <button
             onClick={onAddStudentClick}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs transition-colors"
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             <span>Thêm học sinh</span>
           </button>
+
+          <button
+            onClick={() => {
+              if (
+                window.confirm(
+                  'Bạn có muốn đặt lại tên toàn bộ 28 học sinh thành "Học sinh 01" đến "Học sinh 28" không?'
+                )
+              ) {
+                onResetStudentsToDefault();
+              }
+            }}
+            className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-500 hover:text-amber-700 border border-slate-200 hover:border-amber-200 transition-colors"
+            title="Đặt lại tên mẫu Học sinh 01 ... 28"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
+      {/* Team Tabs / Stats */}
+      <div className="px-4 sm:px-5 py-2.5 bg-slate-50/70 border-b border-[#e7edf4] flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setTeamFilter('')}
+          className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 ${
+            teamFilter === ''
+              ? 'bg-blue-600 text-white shadow-2xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Tất cả ({students.length})</span>
+        </button>
+
+        {(['Tổ 1', 'Tổ 2', 'Tổ 3', 'Tổ 4'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTeamFilter(teamFilter === t ? '' : t)}
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 ${
+              teamFilter === t
+                ? 'bg-blue-600 text-white shadow-2xs'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <span>{t}</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-md text-[10px] font-extrabold ${
+                teamFilter === t ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {teamCounts[t] || 0}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Toolbar: Search, Filters, Bulk Operations */}
-      <div className="p-4 bg-slate-50/50 border-b border-[#e7edf4] flex flex-wrap items-center justify-between gap-2.5">
+      <div className="p-4 bg-white border-b border-[#e7edf4] flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
           {/* Search */}
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <div className="relative flex-1 min-w-[220px] max-w-sm">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm theo tên học sinh, chức vụ..."
-              className="w-full pl-9 pr-3.5 py-2 bg-white rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-hidden focus:border-blue-500 font-medium"
+              className="w-full pl-9 pr-3.5 py-2 bg-slate-50/50 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-hidden focus:border-blue-500 focus:bg-white font-medium"
             />
           </div>
 
-          {/* Team Filter */}
-          <select
-            value={teamFilter}
-            onChange={(e) => setTeamFilter(e.target.value)}
-            className="px-3 py-2 bg-white rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-hidden focus:border-blue-500"
-          >
-            <option value="">Tất cả các tổ</option>
-            <option value="Tổ 1">Tổ 1</option>
-            <option value="Tổ 2">Tổ 2</option>
-            <option value="Tổ 3">Tổ 3</option>
-            <option value="Tổ 4">Tổ 4</option>
-          </select>
-
           {/* Sort By */}
-          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5">
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">
             <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
             <select
               value={sortBy}
