@@ -97,14 +97,14 @@ export const StudentsView: React.FC<StudentsViewProps> = ({
             onClick={() => {
               if (
                 window.confirm(
-                  'Bạn có muốn đặt lại tên toàn bộ 28 học sinh thành "Học sinh 01" đến "Học sinh 28" không?'
+                  'Bạn có muốn đặt lại danh sách lớp về 1 học sinh tượng trưng ban đầu (Học sinh 01) không?'
                 )
               ) {
                 onResetStudentsToDefault();
               }
             }}
             className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 text-slate-500 hover:text-amber-700 border border-slate-200 hover:border-amber-200 transition-colors"
-            title="Đặt lại tên mẫu Học sinh 01 ... 28"
+            title="Đặt lại về 1 học sinh tượng trưng"
           >
             <RefreshCw className="w-4 h-4" />
           </button>

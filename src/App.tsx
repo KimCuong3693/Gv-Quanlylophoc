@@ -4,7 +4,6 @@ import {
   Student,
   Task,
   Notice,
-  LibraryItem,
   ClassSettings,
   ViewTab,
   TeacherAccount
@@ -13,7 +12,6 @@ import {
   initialStudents,
   initialTasks,
   initialNotices,
-  initialLibrary,
   defaultSettings
 } from './data/initialData';
 import {
@@ -37,7 +35,6 @@ import { StudentsView } from './components/views/StudentsView';
 import { PointsView } from './components/views/PointsView';
 import { LeaderboardView } from './components/views/LeaderboardView';
 import { TasksView } from './components/views/TasksView';
-import { LibraryView } from './components/views/LibraryView';
 import { NoticesView } from './components/views/NoticesView';
 import { ReportsView } from './components/views/ReportsView';
 import { SettingsView } from './components/views/SettingsView';
@@ -52,19 +49,17 @@ import { RandomPickerModal } from './components/modals/RandomPickerModal';
 import { AttendanceModal } from './components/modals/AttendanceModal';
 import { NotesModal } from './components/modals/NotesModal';
 import { NoticeModal } from './components/modals/NoticeModal';
-import { LibraryModal } from './components/modals/LibraryModal';
 import { TeacherEditModal } from './components/modals/TeacherEditModal';
 import { SupportModal } from './components/modals/SupportModal';
 
 const STORAGE_KEYS = {
-  students: 'vuon-uom-tri-thuc-students-v2',
-  tasks: 'vuon-uom-tri-thuc-tasks-v2',
-  notices: 'vuon-uom-tri-thuc-notices-v2',
-  library: 'vuon-uom-tri-thuc-library-v2',
-  settings: 'vuon-uom-tri-thuc-settings-v2',
-  notes: 'vuon-uom-tri-thuc-notes-v2',
-  teachers: 'vuon-uom-tri-thuc-teachers-v2',
-  currentTeacher: 'vuon-uom-tri-thuc-session-v2'
+  students: 'vuon-uom-tri-thuc-students-v4',
+  tasks: 'vuon-uom-tri-thuc-tasks-v4',
+  notices: 'vuon-uom-tri-thuc-notices-v4',
+  settings: 'vuon-uom-tri-thuc-settings-v4',
+  notes: 'vuon-uom-tri-thuc-notes-v4',
+  teachers: 'vuon-uom-tri-thuc-teachers-v4',
+  currentTeacher: 'vuon-uom-tri-thuc-session-v4'
 };
 
 const DEFAULT_TEACHERS: TeacherAccount[] = [
@@ -113,9 +108,9 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // If stored data contains old hardcoded student names, reset to initialStudents with 'Học sinh 01...'
+          // If stored data contains old multi-student sample or old names, reset to initialStudents (1 placeholder student)
           const hasOldNames = parsed.some(
-            (s: any) => s.name === 'Nguyễn Hoàng Minh Khang' || s.name === 'Trần Ngọc Bảo An'
+            (s: any) => s.name === 'Nguyễn Hoàng Minh Khang' || s.name === 'Trần Ngọc Bảo An' || parsed.length > 5
           );
           if (hasOldNames) {
             return initialStudents;
@@ -144,15 +139,6 @@ export default function App() {
       return saved ? JSON.parse(saved) : initialNotices;
     } catch {
       return initialNotices;
-    }
-  });
-
-  const [library, setLibrary] = useState<LibraryItem[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.library);
-      return saved ? JSON.parse(saved) : initialLibrary;
-    } catch {
-      return initialLibrary;
     }
   });
 
@@ -193,7 +179,6 @@ export default function App() {
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
-  const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
   const [isTeacherEditModalOpen, setIsTeacherEditModalOpen] = useState(false);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
@@ -240,10 +225,6 @@ export default function App() {
   }, [notices]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.library, JSON.stringify(library));
-  }, [library]);
-
-  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
   }, [settings]);
 
@@ -259,13 +240,12 @@ export default function App() {
         students,
         tasks,
         notices,
-        library,
         settings,
         notes
       });
     }, 1200);
     return () => clearTimeout(timer);
-  }, [currentTeacher?.id, students, tasks, notices, library, settings, notes]);
+  }, [currentTeacher?.id, students, tasks, notices, settings, notes]);
 
   // Toast Helper
   const showToast = (message: string, type: 'success' | 'error' | 'info' | 'points' = 'success') => {
@@ -292,7 +272,6 @@ export default function App() {
         if (remoteData.students && remoteData.students.length > 0) setStudents(remoteData.students);
         if (remoteData.tasks && remoteData.tasks.length > 0) setTasks(remoteData.tasks);
         if (remoteData.notices && remoteData.notices.length > 0) setNotices(remoteData.notices);
-        if (remoteData.library && remoteData.library.length > 0) setLibrary(remoteData.library);
         if (remoteData.settings) setSettings(remoteData.settings);
         if (remoteData.notes && remoteData.notes.length > 0) setNotes(remoteData.notes);
       } else {
@@ -301,7 +280,6 @@ export default function App() {
           students,
           tasks,
           notices,
-          library,
           settings: {
             ...settings,
             teacherName: teacher.name || settings.teacherName,
@@ -550,7 +528,7 @@ export default function App() {
     showToast('Đã xóa nhiệm vụ');
   };
 
-  // Notice & Library
+  // Notices
   const handleAddNotice = (notice: Omit<Notice, 'id'>) => {
     const newNotice: Notice = {
       id: Date.now(),
@@ -563,19 +541,6 @@ export default function App() {
   const handleDeleteNotice = (id: string | number) => {
     setNotices((prev) => prev.filter((n) => n.id !== id));
     showToast('Đã xóa thông báo');
-  };
-
-  const handleAddResource = (item: Omit<LibraryItem, 'id'>) => {
-    const newItem: LibraryItem = {
-      id: Date.now(),
-      ...item
-    };
-    setLibrary((prev) => [newItem, ...prev]);
-    showToast('Đã thêm tài liệu học tập vào thư viện!');
-  };
-
-  const handleDownloadResource = (item: LibraryItem) => {
-    showToast(`Đang tải tài liệu "${item.title}"...`, 'info');
   };
 
   // Export & Import
@@ -610,7 +575,6 @@ export default function App() {
       students,
       tasks,
       notices,
-      library,
       settings,
       notes
     };
@@ -636,7 +600,6 @@ export default function App() {
         if (data.students && Array.isArray(data.students)) setStudents(data.students);
         if (data.tasks && Array.isArray(data.tasks)) setTasks(data.tasks);
         if (data.notices && Array.isArray(data.notices)) setNotices(data.notices);
-        if (data.library && Array.isArray(data.library)) setLibrary(data.library);
         if (data.settings) setSettings(data.settings);
         if (data.notes) setNotes(data.notes);
         showToast('Khôi phục dữ liệu từ file JSON thành công!');
@@ -652,7 +615,6 @@ export default function App() {
       setStudents(initialStudents);
       setTasks(initialTasks);
       setNotices(initialNotices);
-      setLibrary(initialLibrary);
       setSettings(defaultSettings);
       showToast('Đã khôi phục dữ liệu mẫu ban đầu!');
     }
@@ -787,14 +749,6 @@ export default function App() {
               onOpenCreateTask={() => setIsTaskModalOpen(true)}
               onCompleteTask={handleCompleteTask}
               onDeleteTask={handleDeleteTask}
-            />
-          )}
-
-          {currentView === 'library' && (
-            <LibraryView
-              library={library}
-              onOpenAddResource={() => setIsLibraryModalOpen(true)}
-              onDownload={handleDownloadResource}
             />
           )}
 
@@ -955,12 +909,6 @@ export default function App() {
         onClose={() => setIsNoticeModalOpen(false)}
         onAddNotice={handleAddNotice}
         teacherName={settings.teacherName}
-      />
-
-      <LibraryModal
-        isOpen={isLibraryModalOpen}
-        onClose={() => setIsLibraryModalOpen(false)}
-        onAddResource={handleAddResource}
       />
 
       <TeacherEditModal

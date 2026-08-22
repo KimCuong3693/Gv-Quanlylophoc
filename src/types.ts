@@ -72,7 +72,6 @@ export type ViewTab =
   | 'points'
   | 'leaderboard'
   | 'tasks'
-  | 'library'
   | 'notices'
   | 'reports'
   | 'settings';

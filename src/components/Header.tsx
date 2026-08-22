@@ -19,7 +19,6 @@ const VIEW_TITLES: Record<ViewTab, string> = {
   points: 'Tích điểm thi đua',
   leaderboard: 'Bảng vàng vinh danh',
   tasks: 'Nhiệm vụ & Bài tập',
-  library: 'Thư viện học liệu',
   notices: 'Thông báo lớp học',
   reports: 'Báo cáo & Thống kê',
   settings: 'Cài đặt lớp học'

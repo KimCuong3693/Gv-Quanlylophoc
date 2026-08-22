@@ -130,7 +130,7 @@ export const BulkStudentsModal: React.FC<BulkStudentsModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm('Đặt lại toàn bộ danh sách lớp về mẫu 28 học sinh (Học sinh 01 → Học sinh 28)?')) {
+                  if (window.confirm('Đặt lại danh sách lớp về 1 học sinh tượng trưng ban đầu (Học sinh 01)?')) {
                     onResetToDefault();
                     onClose();
                   }
@@ -138,7 +138,7 @@ export const BulkStudentsModal: React.FC<BulkStudentsModalProps> = ({
                 className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 transition-colors shadow-2xs flex items-center gap-1"
               >
                 <RefreshCw className="w-3 h-3" />
-                <span>Đặt lại mặc định</span>
+                <span>Đặt lại ban đầu</span>
               </button>
             </div>
           </div>

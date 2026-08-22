@@ -5,7 +5,6 @@ import {
   Award,
   Trophy,
   CheckSquare,
-  BookOpen,
   Bell,
   BarChart3,
   Settings,
@@ -45,8 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
   onOpenEditTeacher,
   onOpenSupport,
-  unreadNoticesCount = 2,
-  openTasksCount = 2,
+  unreadNoticesCount = 0,
+  openTasksCount = 0,
   onLogout
 }) => {
   const navItems: NavItem[] = [
@@ -55,7 +54,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'points', label: 'Tích điểm & Khen thưởng', icon: Award },
     { id: 'leaderboard', label: 'Bảng vàng vinh danh', icon: Trophy },
     { id: 'tasks', label: 'Nhiệm vụ & Bài tập', icon: CheckSquare, badge: openTasksCount > 0 ? openTasksCount : undefined },
-    { id: 'library', label: 'Thư viện học liệu', icon: BookOpen },
     { id: 'notices', label: 'Thông báo', icon: Bell, badge: unreadNoticesCount > 0 ? unreadNoticesCount : undefined },
     { id: 'reports', label: 'Báo cáo lớp', icon: BarChart3 },
     { id: 'settings', label: 'Cài đặt', icon: Settings }

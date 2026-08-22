@@ -4,7 +4,7 @@ export interface ClassPayload {
   students: Student[];
   tasks: Task[];
   notices: Notice[];
-  library: LibraryItem[];
+  library?: any[];
   settings: ClassSettings;
   notes: any[];
 }
