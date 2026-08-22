@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { TeacherAccount } from '../../types';
 import { loginTeacherAPI, registerTeacherAPI, googleAuthAPI } from '../../utils/api';
+import { Open22Logo } from '../Open22Logo';
+import localBannerImg from '../../assets/images/classroom_garden_banner_1787155400981.jpg';
 
 interface LoginViewProps {
   onLoginSuccess: (teacher: TeacherAccount) => void;
@@ -292,13 +294,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={() => setIsForgotModalOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-colors"
-        >
-          <HelpCircle className="w-4 h-4 text-blue-500" />
-          <span className="hidden sm:inline">Trợ giúp đăng nhập</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {/* OPEN 22 MEDIA Brand identity */}
+          <Open22Logo variant="badge" className="hidden sm:inline-flex" />
+
+          <button
+            onClick={() => setIsForgotModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-blue-600 hover:bg-blue-50/80 transition-colors"
+          >
+            <HelpCircle className="w-4 h-4 text-blue-500" />
+            <span className="hidden sm:inline">Trợ giúp đăng nhập</span>
+          </button>
+        </div>
       </header>
 
       {/* Main Form Center Container */}
@@ -307,11 +314,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
           {/* Left Column: Visual Banner & Value Propositions */}
           <div className="lg:col-span-5 relative bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-700 text-white p-6 sm:p-8 flex flex-col justify-between overflow-hidden min-h-[280px] lg:min-h-[580px]">
             {/* Background Illustration / Layer */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
+            <div className="absolute inset-0 opacity-25 pointer-events-none mix-blend-overlay">
               <img
-                src="/src/assets/images/classroom_garden_banner_1787155400981.jpg"
+                src={localBannerImg}
                 alt="Banner"
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -320,9 +330,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
             {/* Top Tag */}
             <div className="relative z-10 space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-xs font-bold border border-white/30 shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Không gian lớp học hạnh phúc</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-xs font-bold border border-white/30 shadow-2xs">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Không gian lớp học hạnh phúc</span>
+                </div>
+                <Open22Logo variant="icon" size="xs" />
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
@@ -712,10 +725,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
             </div>
 
             {/* Bottom Support Info */}
-            <div className="pt-6 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span className="flex items-center gap-1 font-medium">
-                <span>© 2026 Vườn Ươm Tri Thức</span>
-              </span>
+            <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <Open22Logo variant="icon" size="xs" />
+                <span className="font-medium text-[11px] text-slate-600">
+                  Phát triển & Bảo trợ công nghệ bởi <strong className="text-slate-800 font-bold">OPEN 22 MEDIA</strong>
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsForgotModalOpen(true)}

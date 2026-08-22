@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bell, Calendar, Menu, Volume2, VolumeX, Sparkles, LogOut, User } from 'lucide-react';
 import { ViewTab, ClassSettings } from '../types';
+import { Open22Logo } from './Open22Logo';
 
 interface HeaderProps {
   currentView: ViewTab;
@@ -76,6 +77,11 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Open22 Media brand marker */}
+        <div className="hidden xl:flex items-center">
+          <Open22Logo variant="badge" />
+        </div>
+
         <button
           onClick={() => onUpdateSettings({ ...settings, enableSound: !settings.enableSound })}
           title={settings.enableSound ? 'Tắt âm thanh hiệu ứng' : 'Bật âm thanh hiệu ứng'}

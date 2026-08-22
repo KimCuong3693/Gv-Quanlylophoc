@@ -5,6 +5,7 @@ import { Banner } from '../Banner';
 import { MetricsOverview } from '../MetricsOverview';
 import { QuickTeacherTools } from '../QuickTeacherTools';
 import { StudentCard } from '../StudentCard';
+import { Open22Logo } from '../Open22Logo';
 
 interface DashboardViewProps {
   students: Student[];
@@ -130,6 +131,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* OPEN 22 MEDIA Footer Recognition Bar */}
+      <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-white/70 backdrop-blur-xs rounded-2xl border border-[#e7edf4] text-xs text-slate-500">
+        <div className="flex items-center gap-3">
+          <Open22Logo variant="icon" size="sm" />
+          <div>
+            <div className="flex items-center gap-1.5 font-bold text-slate-800">
+              <span>Đồng hành cùng</span>
+              <span className="text-blue-700">Vườn Ươm Tri Thức</span>
+              <span className="text-slate-300">•</span>
+              <span className="text-emerald-600">OPEN 22 MEDIA</span>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Nền tảng thi đua & quản lý lớp học tiểu học thông minh 4.0
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Open22Logo variant="badge" />
         </div>
       </div>
     </div>

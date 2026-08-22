@@ -15,6 +15,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { ViewTab, ClassSettings } from '../types';
+import { Open22Logo } from './Open22Logo';
 
 interface SidebarProps {
   currentView: ViewTab;
@@ -163,6 +164,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             )}
           </div>
+        </div>
+
+        {/* OPEN 22 MEDIA Brand identity badge in sidebar footer */}
+        <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-center">
+          <Open22Logo variant="badge" className="w-full justify-center" />
         </div>
       </aside>
     </>
