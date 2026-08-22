@@ -16,7 +16,7 @@ export async function fetchTeachersList(): Promise<TeacherAccount[]> {
     const data = await res.json();
     return data.teachers || [];
   } catch (err) {
-    console.warn('[API] Could not fetch teachers from server, using local fallback:', err);
+    // Graceful offline fallback
     return [];
   }
 }
@@ -24,18 +24,24 @@ export async function fetchTeachersList(): Promise<TeacherAccount[]> {
 export async function loginTeacherAPI(
   emailOrUsername: string,
   password?: string
-): Promise<{ success: boolean; teacher?: TeacherAccount; message?: string }> {
+): Promise<{ success: boolean; teacher?: TeacherAccount; message?: string; networkError?: boolean }> {
   try {
     const res = await fetch('/api/teachers/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ emailOrUsername, password })
     });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 404) {
+        const errData = await res.json().catch(() => null);
+        return { success: false, message: errData?.message || 'Tài khoản hoặc mật khẩu không chính xác.' };
+      }
+      return { success: false, networkError: true };
+    }
     const data = await res.json();
     return data;
   } catch (err: any) {
-    console.error('[API] Login request error:', err);
-    return { success: false, message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.' };
+    return { success: false, networkError: true };
   }
 }
 
@@ -45,18 +51,28 @@ export async function registerTeacherAPI(teacherData: {
   password?: string;
   className: string;
   avatar?: string;
-}): Promise<{ success: boolean; teacher?: TeacherAccount; message?: string }> {
+}): Promise<{ success: boolean; teacher?: TeacherAccount; message?: string; conflict?: boolean; networkError?: boolean }> {
   try {
     const res = await fetch('/api/teachers/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(teacherData)
     });
+    if (res.status === 409) {
+      const errData = await res.json().catch(() => null);
+      return {
+        success: false,
+        conflict: true,
+        message: errData?.message || 'Tài khoản với Email hoặc Tên này đã tồn tại trên hệ thống.'
+      };
+    }
+    if (!res.ok) {
+      return { success: false, networkError: true };
+    }
     const data = await res.json();
     return data;
   } catch (err: any) {
-    console.error('[API] Register request error:', err);
-    return { success: false, message: 'Không thể kết nối đến máy chủ đăng ký.' };
+    return { success: false, networkError: true };
   }
 }
 
@@ -65,18 +81,20 @@ export async function googleAuthAPI(payload: {
   name: string;
   className: string;
   avatar?: string;
-}): Promise<{ success: boolean; teacher?: TeacherAccount; message?: string }> {
+}): Promise<{ success: boolean; teacher?: TeacherAccount; message?: string; networkError?: boolean }> {
   try {
     const res = await fetch('/api/teachers/google-auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+    if (!res.ok) {
+      return { success: false, networkError: true };
+    }
     const data = await res.json();
     return data;
   } catch (err: any) {
-    console.error('[API] Google auth request error:', err);
-    return { success: false, message: 'Lỗi khi gửi yêu cầu đăng nhập Google.' };
+    return { success: false, networkError: true };
   }
 }
 
@@ -87,7 +105,6 @@ export async function loadTeacherClassData(teacherId: string): Promise<Partial<C
     const data = await res.json();
     return data.data || null;
   } catch (err) {
-    console.warn('[API] Failed to load remote class data:', err);
     return null;
   }
 }
@@ -101,7 +118,7 @@ export async function saveTeacherClassData(teacherId: string, payload: ClassPayl
     });
     return res.ok;
   } catch (err) {
-    console.warn('[API] Failed to sync class data to server:', err);
     return false;
   }
 }
+

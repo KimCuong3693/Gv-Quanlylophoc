@@ -212,46 +212,62 @@ export const LoginView: React.FC<LoginViewProps> = ({
       return;
     }
 
+    // Check duplicate in registered teachers list
+    const cleanEmail = regEmail.trim().toLowerCase();
+    const cleanName = regName.trim().toLowerCase();
+    const isDuplicate = registeredTeachers.some(
+      (t) => t.email.toLowerCase() === cleanEmail || t.name.toLowerCase() === cleanName
+    );
+
+    if (isDuplicate) {
+      setRegError('Tài khoản với Email hoặc Tên này đã tồn tại. Thầy/Cô vui lòng Đăng nhập hoặc dùng Email khác.');
+      return;
+    }
+
     setIsRegLoading(true);
 
+    const localTeacher: TeacherAccount = {
+      id: `teacher-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name: regName.trim(),
+      email: regEmail.trim(),
+      password: regPassword,
+      className: regClass.trim() || 'Lớp 4A2',
+      avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&auto=format&fit=crop&q=80',
+      createdAt: new Date().toISOString()
+    };
+
     try {
-      // Send registration to server to persist globally for all browsers
+      // Attempt registration via Server API
       const res = await registerTeacherAPI({
-        name: regName.trim(),
-        email: regEmail.trim(),
-        password: regPassword,
-        className: regClass.trim() || 'Lớp 4A2',
-        avatar: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&auto=format&fit=crop&q=80'
+        name: localTeacher.name,
+        email: localTeacher.email,
+        password: localTeacher.password,
+        className: localTeacher.className,
+        avatar: localTeacher.avatar
       });
 
       setIsRegLoading(false);
 
-      if (res.success && res.teacher) {
-        setRegSuccess(true);
-        onRegisterTeacher(res.teacher);
-
-        setTimeout(() => {
-          onLoginSuccess(res.teacher!);
-        }, 500);
-      } else {
-        setRegError(res.message || 'Không thể tạo tài khoản. Vui lòng kiểm tra lại thông tin.');
+      if (res.conflict) {
+        setRegError(res.message || 'Tài khoản này đã tồn tại trên hệ thống. Vui lòng đăng nhập.');
+        return;
       }
-    } catch (err) {
-      setIsRegLoading(false);
-      // Fallback local registration
-      const newTeacher: TeacherAccount = {
-        id: `teacher-${Date.now()}`,
-        name: regName.trim(),
-        email: regEmail.trim(),
-        password: regPassword,
-        className: regClass.trim() || 'Lớp 4A2',
-        createdAt: new Date().toISOString()
-      };
+
+      const activeTeacher = res.success && res.teacher ? res.teacher : localTeacher;
+
       setRegSuccess(true);
-      onRegisterTeacher(newTeacher);
+      onRegisterTeacher(activeTeacher);
+
       setTimeout(() => {
-        onLoginSuccess(newTeacher);
-      }, 500);
+        onLoginSuccess(activeTeacher);
+      }, 400);
+    } catch {
+      setIsRegLoading(false);
+      setRegSuccess(true);
+      onRegisterTeacher(localTeacher);
+      setTimeout(() => {
+        onLoginSuccess(localTeacher);
+      }, 400);
     }
   };
 
